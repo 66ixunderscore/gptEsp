@@ -1,0 +1,58 @@
+local Players = game:GetService("Players")
+local LocalPlayer = Players.LocalPlayer
+local Camera = workspace.CurrentCamera
+
+-- Function to create the ESP (no fill box with health and distance)
+local function createESP(targetPlayer)
+    local character = targetPlayer.Character
+    if not character then return end
+    
+    -- Create a BillboardGui
+    local billboardGui = Instance.new("BillboardGui")
+    billboardGui.Name = "ESP"
+    billboardGui.Adornee = character:WaitForChild("HumanoidRootPart")
+    billboardGui.Size = UDim2.new(1, 0, 1, 0)
+    billboardGui.StudsOffset = Vector3.new(0, 3, 0)
+    billboardGui.AlwaysOnTop = true
+    billboardGui.Parent = Camera
+    
+    -- Add text label for health and distance
+    local textLabel = Instance.new("TextLabel")
+    textLabel.Size = UDim2.new(2, 0, 1, 0)
+    textLabel.BackgroundTransparency = 1
+    textLabel.TextStrokeTransparency = 0.5
+    textLabel.TextColor3 = Color3.new(1, 0, 0)
+    textLabel.Parent = billboardGui
+    
+    -- Update health and distance
+    game:GetService("RunService").RenderStepped:Connect(function()
+        if character and character:FindFirstChild("Humanoid") and character:FindFirstChild("HumanoidRootPart") then
+            local humanoid = character:FindFirstChild("Humanoid")
+            local distance = (LocalPlayer.Character.HumanoidRootPart.Position - character.HumanoidRootPart.Position).magnitude
+            textLabel.Text = string.format("Health: %d\nDistance: %.1f", humanoid.Health, distance)
+        else
+            billboardGui:Destroy()
+        end
+    end)
+end
+
+-- Attach ESP to all players except the local player
+for _, player in pairs(Players:GetPlayers()) do
+    if player ~= LocalPlayer then
+        player.CharacterAdded:Connect(function()
+            createESP(player)
+        end)
+        if player.Character then
+            createESP(player)
+        end
+    end
+end
+
+-- Update for any new players that join
+Players.PlayerAdded:Connect(function(newPlayer)
+    if newPlayer ~= LocalPlayer then
+        newPlayer.CharacterAdded:Connect(function()
+            createESP(newPlayer)
+        end)
+    end
+end)
